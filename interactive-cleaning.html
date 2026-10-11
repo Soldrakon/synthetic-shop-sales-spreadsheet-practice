@@ -1,0 +1,242 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Why a sales subtotal changes after CSV cleaning</title><style>body{margin:32px auto;max-width:1150px;padding:0 18px;font:16px/1.6 system-ui,sans-serif;color:#193047}h1{font-size:32px;line-height:1.2}a{color:#006d78}#provenance{max-width:85ch;margin-top:28px}button,select,input{touch-action:manipulation}</style><main><h1>Why a sales subtotal changes after CSV cleaning</h1>
+<p>This interactive exercise uses 18 rows from an original fictional shop-sales teaching pack: 17 distinct order IDs and one repeated row. Turn preparation steps on separately and explain which records enter a selected subtotal. You will also see problems that automatic cleanup cannot resolve.</p>
+<p>Start with <strong>West / All</strong> and all three controls off. Predict the subtotal after trimming category spaces, then after parsing known numeric formats. Try <strong>North / Wholesale</strong> to test whether capitalization affects a SUMIFS match. </p><div id="lesson"></div><section id="provenance"><h2>Method and provenance</h2>
+<p>The FormulaSmith project created the original <strong>Synthetic Shop Sales: Spreadsheet Import and Cleaning Practice</strong> pack on 11 October 2026 using a deterministic generator with seed 20261011. These are wholly fictional transactions. No customer data or external dataset was used. This notebook embeds an unchanged excerpt from the pack's messy export, retaining original order IDs and data-row numbers. The exact original data rows after the header are 7, 8, 11, 13, 19, 21, 24, 29, 31, 34, 44, 52, 67, 100, 109, 112, 138, 145. Row 145 is an extra exact copy of ORD-0008. The complete original pack has 144 clean transactions and 148 messy rows. The excerpt contains 18 rows and must not be compared with full-pack totals.</p>
+<p>For a Completed line, stage net sales are units × USD unit price × (1 − discount), rounded to the nearest cent before summing. Returned and Cancelled lines contribute zero. The demonstrator uses integer price cents and whole-percent discounts to avoid binary half-cent errors. It accepts only documented numeric formats, preserves blanks, validates dates without rollover, flags repeated IDs, and never substitutes the clean source's missing values. Date text written as DD/MM/YYYY uses that explicit source convention. No market or accounting conclusion is intended.</p>
+<p>The original data and this lesson are released under <strong>CC0 1.0 Universal</strong>. The full source, instructor reference, generation method and licence are available in the <a href="https://soldrakon.github.io/synthetic-shop-sales-spreadsheet-practice/">original teaching pack</a>. This notebook is prepared by the FormulaSmith project and is affiliated with the related <a href="https://formulasmith.com/en/sample-data/">FormulaSmith sample-data library</a>. The linked library is an optional learning resource; the embedded rows were created for this pack. </p></section></main><script>document.getElementById('lesson').append((function(){
+// Self-contained Observable JavaScript (ojs) result cell. No imports, account integrations or remote requests.
+const sourceCSV = "order_id,order_date,region,channel,product_id,units,unit_price_usd,discount_rate,status\nORD-0007,2026-01-04,  West  ,Retail,P006,3,14.60,0.00,Completed\nORD-0008,2026-01-05,North,Retail,P001,5,4.50,0.15,Completed\nORD-0011,2026-01-07,North,wholesale,P005,5,22.75,0.15,Completed\nORD-0013,2026/01/08,East,Online,P003,1,18.40,0.15,Completed\nORD-0019,2026-01-12, South ,Retail,P005,7,22.75,0.05,Completed\nORD-0021,2026-01-13,South,Retail, P003 ,4,18.40,0.05,Completed\nORD-0024,2026-01-15,North,Retail,P006,  6  ,14.60,0.10,Cancelled\nORD-0029,2026-01-18,North,Retail,P004,6,$9.90,0.15,Completed\nORD-0031,2026-01-19,  East  ,Online,P001,7,4.50,0.00,Completed\nORD-0034,2026-01-21,South,Online,P002,3,6.25,0%,Completed\nORD-0044,2026-01-27,,Wholesale,P003,8,18.40,0.15,Completed\nORD-0052,01/02/2026,West,Retail,P001,6,4.50,0.05,Completed\nORD-0067,2026-02-11,West,Retail,P001,,4.50,0.15,Completed\nORD-0100,2026-02-30,North,Retail,P003,1,18.40,0.10,Completed\nORD-0109,2026-03-09,North,retail,P004,8,9.90,0.10,Completed\nORD-0112,2026-03-11,South,Wholesale,P004,4,9.90,10%,Completed\nORD-0138,2026-03-27,West,Online,P005,5,$22.75,0.00,Completed\nORD-0008,2026-01-05,North,Retail,P001,5,4.50,0.15,Completed\n";
+const sourceRowNumbers = [7,8,11,13,19,21,24,29,31,34,44,52,67,100,109,112,138,145];
+const FIELDS = ['order_id','order_date','region','channel','product_id','units','unit_price_usd','discount_rate','status'];
+const REGIONS = ['East','North','South','West'];
+const CHANNELS = ['Online','Retail','Wholesale'];
+const STATUSES = ['Completed','Returned','Cancelled'];
+
+function parseCSV(csv) {
+  const rows = []; let row = [], field = '', quoted = false;
+  for (let i = 0; i < csv.length; i++) {
+    const c = csv[i];
+    if (c === '"') { if (quoted && csv[i + 1] === '"') { field += '"'; i++; } else quoted = !quoted; }
+    else if (c === ',' && !quoted) { row.push(field); field = ''; }
+    else if ((c === '\n' || c === '\r') && !quoted) {
+      if (c === '\r' && csv[i + 1] === '\n') i++;
+      row.push(field); if (row.some(v => v !== '')) rows.push(row); row = []; field = '';
+    } else field += c;
+  }
+  if (quoted) throw new Error('Unclosed CSV quote');
+  if (field !== '' || row.length) { row.push(field); rows.push(row); }
+  return rows;
+}
+
+function getRows(csv, sourceRowNumbers) {
+  const [header, ...rows] = parseCSV(csv);
+  if (header.join(',') !== FIELDS.join(',')) throw new Error('Unexpected CSV columns');
+  return rows.map((values, index) => {
+    if (values.length !== FIELDS.length) throw new Error('Unexpected CSV row width');
+    return {raw: Object.fromEntries(FIELDS.map((key,i) => [key, values[i]])), sourceRow: sourceRowNumbers?.[index] ?? index + 1};
+  });
+}
+
+function trimKnownWhitespace(value) {
+  return value.replace(/\u00a0/g, ' ').replace(/ +/g, ' ').replace(/^ +| +$/g, '');
+}
+
+function category(value, choices, options) {
+  const text = options.whitespace ? trimKnownWhitespace(value) : value;
+  const canonical = choices.find(item => item.toLowerCase() === text.toLowerCase());
+  return {text: options.case && canonical ? canonical : text, valid: !!canonical, missing: value.trim() === ''};
+}
+
+function numberValue(raw, kind, normalize) {
+  if (raw.trim() === '') return {value: null, scaled: null, error: 'missing'};
+  let text = normalize ? trimKnownWhitespace(raw) : raw;
+  let percent = false;
+  if (normalize && kind === 'price') text = text.replace(/^\$/, '');
+  if (normalize && kind === 'discount' && text.endsWith('%')) { text = text.slice(0, -1); percent = true; }
+  const grammar = kind === 'units' ? /^(?:0|[1-9]\d*)$/ : /^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/;
+  if (!grammar.test(text)) return {value: null, scaled: null, error: 'format'};
+  const [whole, fraction = ''] = text.split('.');
+  const hundredths = Number(whole) * 100 + Number(fraction.padEnd(2, '0'));
+  if (!Number.isSafeInteger(hundredths)) return {value: null, scaled: null, error: 'range'};
+  if (kind === 'units') return {value: Number(whole), scaled: Number(whole), error: null};
+  if (kind === 'price') return {value: hundredths / 100, scaled: hundredths, error: null};
+  // This source uses whole-percent discounts. Reject finer percent precision rather than round it silently.
+  const discountPercent = percent ? hundredths / 100 : hundredths;
+  if (!Number.isInteger(discountPercent) || discountPercent < 0 || discountPercent > 100) return {value: null, scaled: null, error: 'range'};
+  return {value: discountPercent / 100, scaled: discountPercent, error: null};
+}
+
+function calendarDate(raw) {
+  let match = /^(\d{4})([-/])(\d{2})\2(\d{2})$/.exec(raw), year, month, day;
+  if (match) [year,month,day] = [match[1],match[3],match[4]].map(Number);
+  else {
+    match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(raw);
+    if (!match) return {value: null, error: raw.trim() === '' ? 'missing' : 'format'};
+    [day,month,year] = match.slice(1).map(Number);
+  }
+  const stamp = new Date(Date.UTC(year, month - 1, day));
+  if (stamp.getUTCFullYear() !== year || stamp.getUTCMonth() !== month - 1 || stamp.getUTCDate() !== day) return {value: null, error: 'calendar'};
+  return {value: `${String(year).padStart(4,'0')}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`, error: null};
+}
+
+function evaluateRows(rawRows, options) {
+  const groupCount = new Map(), signatures = new Set();
+  rawRows.forEach(row => groupCount.set(row.raw.order_id, (groupCount.get(row.raw.order_id) ?? 0) + 1));
+  return rawRows.map(({raw,sourceRow}) => {
+    const issues = [], region = category(raw.region, REGIONS, options), channel = category(raw.channel, CHANNELS, options);
+    const status = category(raw.status, STATUSES, options), product = options.whitespace ? trimKnownWhitespace(raw.product_id) : raw.product_id;
+    const units = numberValue(raw.units, 'units', options.numeric), price = numberValue(raw.unit_price_usd, 'price', options.numeric), discount = numberValue(raw.discount_rate, 'discount', options.numeric);
+    const date = calendarDate(raw.order_date);
+    for (const [name,item] of [['region',region],['channel',channel],['status',status]]) {
+      if (!item.valid) issues.push(item.missing ? `Missing ${name}` : `${name} label needs review`);
+    }
+    if (!/^P00[1-6]$/.test(product)) issues.push('Product key needs review');
+    for (const [name,item] of [['units',units],['price',price],['discount',discount]]) {
+      if (item.error) issues.push(item.error === 'missing' ? `Missing ${name}` : `${name} format needs review`);
+    }
+    if (date.error) issues.push(date.error === 'calendar' ? 'Impossible calendar date' : 'Date needs review');
+    const signature = JSON.stringify(FIELDS.map(field => raw[field]));
+    const extraDuplicate = signatures.has(signature); signatures.add(signature);
+    const repeatedId = groupCount.get(raw.order_id) > 1;
+    if (repeatedId) issues.push(extraDuplicate ? 'Extra exact copy retained' : `Repeated ID (${groupCount.get(raw.order_id)} rows)`);
+    let amountCents = null;
+    if (status.valid && status.text.toLowerCase() !== 'completed') amountCents = 0;
+    else if (status.valid && [units,price,discount].every(item => item.error === null)) {
+      const numerator = units.scaled * price.scaled * (100 - discount.scaled);
+      if (Number.isSafeInteger(numerator)) amountCents = Math.floor((numerator + 50) / 100);
+      else issues.push('Amount exceeds exact-number range');
+    }
+    return {raw,sourceRow,region,channel,status,product,units,price,discount,date,repeatedId,extraDuplicate,amountCents,issues};
+  });
+}
+
+function summarize(rows, region = 'All', channel = 'All') {
+  const matches = rows.filter(row => (region === 'All' || row.region.text.toLowerCase() === region.toLowerCase()) && (channel === 'All' || row.channel.text.toLowerCase() === channel.toLowerCase()));
+  const completed = matches.filter(row => row.status.valid && row.status.text.toLowerCase() === 'completed');
+  return {
+    matchingRows: matches.length,
+    knownCompletedRows: completed.filter(row => row.amountCents !== null).length,
+    unresolvedCompletedRows: completed.filter(row => row.amountCents === null).length,
+    subtotalCents: completed.reduce((sum,row) => sum + (row.amountCents ?? 0), 0),
+    globalMissingRegion: rows.filter(row => row.region.missing).length,
+    globalMissingUnits: rows.filter(row => row.units.error === 'missing').length,
+    globalBadDates: rows.filter(row => row.date.error !== null).length,
+    globalExtraDuplicates: rows.filter(row => row.extraDuplicate).length
+  };
+}
+
+function csvSnapshot(rows) {
+  const quote = value => /[",\n\r]/.test(String(value)) ? '"' + String(value).replace(/"/g,'""') + '"' : String(value);
+  const header = [...FIELDS, 'source_data_row', 'stage_net_sales_usd', 'review_notes'];
+  const lines = rows.map(row => [...FIELDS.map(field => {
+    if (field === 'region' || field === 'channel' || field === 'status') return row[field].text;
+    if (field === 'product_id') return row.product;
+    if (field === 'order_date') return row.date.value ?? row.raw[field];
+    if (field === 'units') return row.units.value ?? row.raw[field];
+    if (field === 'unit_price_usd') return row.price.value === null ? row.raw[field] : row.price.value.toFixed(2);
+    if (field === 'discount_rate') return row.discount.value === null ? row.raw[field] : row.discount.value.toFixed(2);
+    return row.raw[field];
+  }), row.sourceRow, row.amountCents === null ? '' : (row.amountCents / 100).toFixed(2), row.issues.join('; ')]);
+  return [header,...lines].map(row => row.map(quote).join(',')).join('\n') + '\n';
+}
+
+const rawRows = getRows(sourceCSV, sourceRowNumbers);
+const root = document.createElement('section');
+root.className = 'fs-cleaning-lesson';
+root.innerHTML = `
+<style>
+.fs-cleaning-lesson{font:15px/1.5 system-ui,sans-serif;color:#193047;background:#fff;border:1px solid #c6d3df;border-radius:12px;padding:20px;max-width:1150px;box-sizing:border-box}
+.fs-cleaning-lesson *{box-sizing:border-box}.fs-cleaning-lesson h2{font-size:23px;line-height:1.25;margin:0 0 8px}.fs-cleaning-lesson h3{font-size:17px;margin:18px 0 8px}.fs-cleaning-lesson p{margin:8px 0}.fs-cleaning-lesson label{display:flex;align-items:center;gap:8px}.fs-cleaning-lesson input{width:17px;height:17px;accent-color:#007b83}.fs-cleaning-lesson select,.fs-cleaning-lesson button{font:inherit;padding:7px 10px;border:1px solid #7b94a8;border-radius:6px;background:white;color:#193047}.fs-cleaning-lesson button{cursor:pointer}.fs-cleaning-lesson button:focus-visible,.fs-cleaning-lesson input:focus-visible,.fs-cleaning-lesson select:focus-visible{outline:3px solid #0b9aab;outline-offset:2px}
+.fs-cleaning-lesson .controls{display:grid;gap:9px;padding:12px;background:#edf6f6;border-radius:8px}.fs-cleaning-lesson .filters{display:flex;flex-wrap:wrap;gap:16px;margin:12px 0}.fs-cleaning-lesson .stats{display:flex;gap:25px;flex-wrap:wrap;border-top:1px solid #d1dde7;border-bottom:1px solid #d1dde7;padding:12px 0}.fs-cleaning-lesson .value{display:block;font-size:25px;font-weight:700;font-variant-numeric:tabular-nums}.fs-cleaning-lesson .notice{background:#fff7e4;border-left:4px solid #bf8422;padding:10px 12px}.fs-cleaning-lesson .muted{color:#4e6275;font-size:13px}.fs-cleaning-lesson .scroll{overflow:auto;max-height:460px;border:1px solid #c6d3df;border-radius:6px;margin-top:10px}.fs-cleaning-lesson table{border-collapse:collapse;min-width:1150px;width:100%;font-size:13px}.fs-cleaning-lesson th{position:sticky;top:0;background:#e9f0f5;text-align:left;z-index:1}.fs-cleaning-lesson th,.fs-cleaning-lesson td{padding:8px;vertical-align:top;border-bottom:1px solid #d9e2ea}.fs-cleaning-lesson th:first-child,.fs-cleaning-lesson td:first-child{min-width:103px}.fs-cleaning-lesson td:last-child{min-width:190px}.fs-cleaning-lesson td.changed{background:#e5f6ed}.fs-cleaning-lesson td.unresolved{background:#fff0d4}.fs-cleaning-lesson .raw{color:#536b7f;display:block;font-family:ui-monospace,monospace;font-size:12px}.fs-cleaning-lesson .number{font-variant-numeric:tabular-nums;white-space:nowrap}.fs-cleaning-lesson .flag{color:#78520f}.fs-cleaning-lesson details{border-top:1px solid #d1dde7;padding:10px 0}.fs-cleaning-lesson summary{cursor:pointer;font-weight:650}.fs-cleaning-lesson code{font:12px/1.5 ui-monospace,monospace;overflow-wrap:anywhere;background:#f0f4f7;padding:2px 4px}.fs-cleaning-lesson .formulas{display:grid;gap:8px}.fs-cleaning-lesson .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+@media(max-width:500px){.fs-cleaning-lesson{padding:14px}.fs-cleaning-lesson .stats{gap:14px}.fs-cleaning-lesson .value{font-size:22px}}
+</style>
+<h2>Inspect a CSV before you trust its subtotal</h2>
+<p>Change one preparation step at a time. The table keeps the original text beside the current value.</p>
+<div class="controls" role="group" aria-label="Preparation steps">
+  <label><input data-control="whitespace" type="checkbox">Trim category and product-key spaces, including nonbreaking spaces</label>
+  <label><input data-control="case" type="checkbox">Standardize known category capitalization</label>
+  <label><input data-control="numeric" type="checkbox">Parse known padded numbers, dollar prices and percent discounts</label>
+</div>
+<div class="filters">
+  <label>Region <select data-filter="region"><option>All</option><option>East</option><option>North</option><option>South</option><option selected>West</option></select></label>
+  <label>Channel <select data-filter="channel"><option>All</option><option>Online</option><option>Retail</option><option>Wholesale</option></select></label>
+  <button type="button" data-action="reset">Reset lesson</button>
+</div>
+<div class="stats" aria-live="polite" aria-atomic="true">
+  <div>Stage subtotal (USD)<span class="value" data-stat="subtotal"></span></div>
+  <div>Matching rows<span class="value" data-stat="matching"></span></div>
+  <div>Completed rows with known amounts<span class="value" data-stat="known"></span></div>
+</div>
+<p class="notice" data-role="notice"></p>
+<p class="muted">This is a subtotal of currently computable Completed lines in the selected category. It retains repeated rows and computable amounts on invalid dates. Unavailable amounts are omitted and counted below. A missing region can affect any regional result. Each line is rounded to cents before summing.</p>
+<p data-role="selection"></p>
+<h3>Raw text and the current stage</h3>
+<p class="muted">All 18 excerpt rows stay visible. Green marks a changed value; amber marks an unresolved value. In raw text, · means an ordinary space, ⍽ a nonbreaking space, and ∅ an empty field. Source row numbers count data rows after the CSV header.</p>
+<div class="scroll" tabindex="0" role="region" aria-label="Scrollable raw and prepared data table">
+<table><caption class="sr-only">Raw and prepared sales excerpt with unresolved data and duplicates retained</caption><thead><tr><th scope="col">Order / source row</th><th scope="col">Region</th><th scope="col">Channel</th><th scope="col">Product</th><th scope="col">Units</th><th scope="col">Price USD</th><th scope="col">Discount</th><th scope="col">Date</th><th scope="col">Stage sales USD</th><th scope="col">Review</th></tr></thead><tbody></tbody></table>
+</div>
+<p><button type="button" data-action="download">Download this stage as CSV</button> <span class="muted">Includes all 18 rows, source row numbers and review notes. It is not a finished clean export.</span></p>
+<h3>Make a prediction, then check it</h3>
+<details><summary>1. West / All: what changes when the spaces and numeric formats are handled?</summary><p>Reset the lesson. The known subtotal starts at <strong>USD 25.65</strong>. Trimming categories adds ORD-0007 and gives <strong>USD 69.45</strong>. Parsing known numeric formats then adds ORD-0138 and gives <strong>USD 183.20</strong>. ORD-0067 still lacks units. None of these values is the final West sales total.</p></details>
+<details><summary>2. North / Wholesale: should changing capitalization change a SUMIFS match?</summary><p>Choose North and Wholesale. The subtotal is <strong>USD 96.69</strong> with either capitalization setting. Excel SUMIFS ignores case. Standardizing “wholesale” to “Wholesale” makes category labels consistent; it does not repair a missed SUMIFS match. Extra spaces can affect matching.</p></details>
+<details><summary>3. Why do all three preparation steps still leave this export unfinished?</summary><p>ORD-0044 has no region, ORD-0067 has no units, ORD-0100 has the impossible date 2026-02-30, and ORD-0008 appears twice. The controls preserve these problems. Check the source system or instructor's clean reference for missing values and the bad date. Review repeated IDs before removing a copy. No final verified total is supplied by this excerpt.</p></details>
+<h3>Use explicit helper columns in Excel</h3>
+<p class="muted">Import the raw CSV as text. These examples use the original nine-column order with headers in row 1, English function names, comma arguments and dot-decimal numeric text. Validate formats and required values first. Workbook locales may use semicolon arguments. This browser demonstration uses a strict parser, not Excel's implicit type-conversion rules.</p>
+<div class="formulas">
+<div>Region helper: <code>=TRIM(SUBSTITUTE(C2,CHAR(160)," "))</code></div>
+<div>Known channel label: <code>=PROPER(TRIM(D2))</code> <span class="muted">SUMIFS itself remains case-insensitive.</span></div>
+<div>Units helper: <code>=IF(F2="","",NUMBERVALUE(TRIM(F2),".",","))</code></div>
+<div>Price helper: <code>=IF(G2="","",NUMBERVALUE(SUBSTITUTE(TRIM(G2),"$",""),".",","))</code></div>
+</div>
+<p class="muted">Discounts are documented fractions (0.10) or percent strings (10%). Convert the latter by dividing the number by 100. A blank stays unavailable. Dates use documented YYYY-MM-DD, YYYY/MM/DD or DD/MM/YYYY rules and a calendar round-trip check; do not let DATE silently roll February 30 into March.</p>
+`;
+const $ = selector => root.querySelector(selector);
+const token = value => value === '' ? '∅' : value.replace(/ /g, '·').replace(/\u00a0/g, '⍽');
+const options = () => Object.fromEntries(['whitespace','case','numeric'].map(key => [key, $(`[data-control="${key}"]`).checked]));
+let currentRows;
+function cell(tr, raw, prepared, unresolved = false) {
+  const td = document.createElement('td');
+  if (unresolved) td.className = 'unresolved'; else if (raw !== prepared) td.className = 'changed';
+  const old = document.createElement('span'); old.className = 'raw'; old.textContent = token(raw); td.append(old);
+  if (raw !== prepared || unresolved) { const next = document.createElement('span'); next.textContent = prepared === null ? 'unavailable' : prepared; td.append(next); }
+  tr.append(td);
+}
+function render() {
+  currentRows = evaluateRows(rawRows, options());
+  const region = $('[data-filter="region"]').value, channel = $('[data-filter="channel"]').value;
+  const summary = summarize(currentRows, region, channel);
+  $('[data-stat="subtotal"]').textContent = (summary.subtotalCents / 100).toFixed(2);
+  $('[data-stat="matching"]').textContent = summary.matchingRows;
+  $('[data-stat="known"]').textContent = summary.knownCompletedRows;
+  $('[data-role="notice"]').textContent = `Review remains open across this excerpt: ${summary.globalMissingRegion} missing region, ${summary.globalMissingUnits} missing units, ${summary.globalBadDates} invalid date and ${summary.globalExtraDuplicates} extra exact copy. The stage subtotal is not verified ground truth.`;
+  $('[data-role="selection"]').textContent = `${summary.unresolvedCompletedRows} selected Completed row(s) have unavailable amounts. Filters compare text without regard to case, as SUMIFS does.`;
+  const body = $('tbody'); body.replaceChildren();
+  for (const row of currentRows) {
+    const tr = document.createElement('tr'); tr.dataset.order = row.raw.order_id;
+    const id = document.createElement('td'); id.textContent = `${row.raw.order_id} (row ${row.sourceRow})`; tr.append(id);
+    cell(tr,row.raw.region,row.region.text,!row.region.valid);
+    cell(tr,row.raw.channel,row.channel.text,!row.channel.valid);
+    cell(tr,row.raw.product_id,row.product,!/^P00[1-6]$/.test(row.product));
+    cell(tr,row.raw.units,row.units.value === null ? null : String(row.units.value),!!row.units.error);
+    cell(tr,row.raw.unit_price_usd,row.price.value === null ? null : row.price.value.toFixed(2),!!row.price.error);
+    cell(tr,row.raw.discount_rate,row.discount.value === null ? null : row.discount.value.toFixed(2),!!row.discount.error);
+    cell(tr,row.raw.order_date,row.date.value,!!row.date.error);
+    const amount = document.createElement('td'); amount.className = 'number'; amount.textContent = row.amountCents === null ? 'unavailable' : (row.amountCents/100).toFixed(2); tr.append(amount);
+    const review = document.createElement('td'); review.className = row.issues.length ? 'flag' : ''; review.textContent = row.issues.join('; ') || 'No unresolved checks'; tr.append(review);
+    body.append(tr);
+  }
+}
+root.addEventListener('change', render);
+$('[data-action="reset"]').addEventListener('click', () => {
+  root.querySelectorAll('input').forEach(input => input.checked = false);
+  $('[data-filter="region"]').value = 'West'; $('[data-filter="channel"]').value = 'All'; render();
+});
+$('[data-action="download"]').addEventListener('click', () => {
+  const url = URL.createObjectURL(new Blob([csvSnapshot(currentRows)], {type:'text/csv;charset=utf-8'}));
+  const link = document.createElement('a'); link.href = url; link.download = 'sales-cleaning-stage.csv'; link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+render();
+return root;
+
+})());</script></html>
