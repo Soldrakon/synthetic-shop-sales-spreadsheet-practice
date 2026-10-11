@@ -1,0 +1,34 @@
+order_id,field,defect_type,raw_value,expected_value,handling
+ORD-0007,region,ascii_spaces,  West  ,West,TRIM
+ORD-0031,region,ascii_spaces,  East  ,East,TRIM
+ORD-0064,region,ascii_spaces,  East  ,East,TRIM
+ORD-0102,region,ascii_spaces,  North  ,North,TRIM
+ORD-0133,region,ascii_spaces,  West  ,West,TRIM
+ORD-0019,region,nonbreaking_spaces, South ,South,"SUBSTITUTE CHAR(160), then TRIM"
+ORD-0086,region,nonbreaking_spaces, West ,West,"SUBSTITUTE CHAR(160), then TRIM"
+ORD-0011,channel,lowercase_category,wholesale,Wholesale,PROPER after TRIM
+ORD-0048,channel,lowercase_category,wholesale,Wholesale,PROPER after TRIM
+ORD-0109,channel,lowercase_category,retail,Retail,PROPER after TRIM
+ORD-0021,product_id,ascii_spaces, P003 ,P003,TRIM
+ORD-0098,product_id,ascii_spaces, P005 ,P005,TRIM
+ORD-0024,units,padded_number,  6  ,6,VALUE after TRIM
+ORD-0078,units,padded_number,  8  ,8,VALUE after TRIM
+ORD-0124,units,padded_number,  4  ,4,VALUE after TRIM
+ORD-0029,unit_price_usd,currency_symbol,$9.90,9.90,"SUBSTITUTE dollar sign, then VALUE"
+ORD-0093,unit_price_usd,currency_symbol,$6.25,6.25,"SUBSTITUTE dollar sign, then VALUE"
+ORD-0138,unit_price_usd,currency_symbol,$22.75,22.75,"SUBSTITUTE dollar sign, then VALUE"
+ORD-0034,discount_rate,percent_text,0%,0.00,"Remove percent sign, convert to number, divide by 100"
+ORD-0112,discount_rate,percent_text,10%,0.10,"Remove percent sign, convert to number, divide by 100"
+ORD-0013,order_date,year_first_slashes,2026/01/08,2026-01-08,Parse explicitly as YYYY/MM/DD
+ORD-0087,order_date,year_first_slashes,2026/02/23,2026-02-23,Parse explicitly as YYYY/MM/DD
+ORD-0140,order_date,year_first_slashes,2026/03/28,2026-03-28,Parse explicitly as YYYY/MM/DD
+ORD-0018,order_date,day_first_slashes,11/01/2026,2026-01-11,"Parse explicitly as DD/MM/YYYY, never infer locale"
+ORD-0052,order_date,day_first_slashes,01/02/2026,2026-02-01,"Parse explicitly as DD/MM/YYYY, never infer locale"
+ORD-0116,order_date,day_first_slashes,13/03/2026,2026-03-13,"Parse explicitly as DD/MM/YYYY, never infer locale"
+ORD-0044,region,missing_required_value,,East,Flag missing. Instructor ground truth needed.
+ORD-0067,units,missing_required_value,,7,Flag missing. Do not replace with zero. Instructor ground truth needed.
+ORD-0100,order_date,invalid_calendar_date,2026-02-30,2026-03-03,Flag invalid. DATE rolls this forward. Instructor ground truth needed.
+ORD-0008,__row__,duplicate_row,second occurrence appended,one row per order_id,Keep first occurrence; remove later exact copy.
+ORD-0038,__row__,duplicate_row,second occurrence appended,one row per order_id,Keep first occurrence; remove later exact copy.
+ORD-0079,__row__,duplicate_row,second occurrence appended,one row per order_id,Keep first occurrence; remove later exact copy.
+ORD-0120,__row__,duplicate_row,second occurrence appended,one row per order_id,Keep first occurrence; remove later exact copy.

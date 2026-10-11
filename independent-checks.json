@@ -1,0 +1,202 @@
+{
+  "issues": [],
+  "check_count": 11698,
+  "passed": true,
+  "expected_answers": [
+    {
+      "exercise_id": "01",
+      "metric": "row_count",
+      "value": "144"
+    },
+    {
+      "exercise_id": "01",
+      "metric": "first_date",
+      "value": "2026-01-01"
+    },
+    {
+      "exercise_id": "01",
+      "metric": "last_date",
+      "value": "2026-03-31"
+    },
+    {
+      "exercise_id": "02",
+      "metric": "completed_net_sales",
+      "value": "6136.66"
+    },
+    {
+      "exercise_id": "02",
+      "metric": "completed_orders",
+      "value": "114"
+    },
+    {
+      "exercise_id": "03",
+      "metric": "returned_orders",
+      "value": "11"
+    },
+    {
+      "exercise_id": "04",
+      "metric": "north_online_net_sales",
+      "value": "340.73"
+    },
+    {
+      "exercise_id": "05",
+      "metric": "february_net_sales",
+      "value": "1786.52"
+    },
+    {
+      "exercise_id": "06",
+      "metric": "P004_product_name",
+      "value": "USB cable"
+    },
+    {
+      "exercise_id": "06",
+      "metric": "office_net_sales",
+      "value": "2178.23"
+    },
+    {
+      "exercise_id": "06",
+      "metric": "unmatched_products",
+      "value": "0"
+    },
+    {
+      "exercise_id": "07",
+      "metric": "region_cells_changed",
+      "value": "7"
+    },
+    {
+      "exercise_id": "07",
+      "metric": "region_cells_missing",
+      "value": "1"
+    },
+    {
+      "exercise_id": "08",
+      "metric": "extra_duplicate_rows",
+      "value": "4"
+    },
+    {
+      "exercise_id": "08",
+      "metric": "distinct_order_ids",
+      "value": "144"
+    },
+    {
+      "exercise_id": "09",
+      "metric": "invalid_calendar_dates",
+      "value": "1"
+    },
+    {
+      "exercise_id": "09",
+      "metric": "valid_date_rows_before_dedup",
+      "value": "147"
+    },
+    {
+      "exercise_id": "10",
+      "metric": "missing_required_fields",
+      "value": "2"
+    },
+    {
+      "exercise_id": "10",
+      "metric": "irrecoverable_fields",
+      "value": "3"
+    },
+    {
+      "exercise_id": "10",
+      "metric": "reconciled_rows",
+      "value": "144"
+    },
+    {
+      "exercise_id": "10",
+      "metric": "reconciled_net_sales",
+      "value": "6136.66"
+    }
+  ],
+  "status_counts": {
+    "Completed": 114,
+    "Returned": 11,
+    "Cancelled": 19
+  },
+  "monthly_net_sales": {
+    "2026-01": "2182.99",
+    "2026-02": "1786.52",
+    "2026-03": "2167.15"
+  },
+  "category_net_sales": {
+    "Drinkware": "2256.82",
+    "Office": "2178.23",
+    "Accessories": "1701.61"
+  },
+  "duplicate_ids": {
+    "ORD-0008": 2,
+    "ORD-0038": 2,
+    "ORD-0079": 2,
+    "ORD-0120": 2
+  },
+  "altered_cell_count": 29,
+  "altered_cell_groups": {
+    "ascii_spaces": 7,
+    "nonbreaking_spaces": 2,
+    "lowercase_category": 3,
+    "padded_number": 3,
+    "currency_symbol": 3,
+    "percent_text": 2,
+    "year_first_slashes": 3,
+    "day_first_slashes": 3,
+    "missing_required_value": 2,
+    "invalid_calendar_date": 1
+  },
+  "ground_truth_repairs": [
+    [
+      "ORD-0044",
+      "region",
+      "East"
+    ],
+    [
+      "ORD-0067",
+      "units",
+      "7"
+    ],
+    [
+      "ORD-0100",
+      "order_date",
+      "2026-03-03"
+    ]
+  ],
+  "invalid_date_ids": [
+    "ORD-0100"
+  ],
+  "missing_required_cells": [
+    [
+      "ORD-0044",
+      "region"
+    ],
+    [
+      "ORD-0067",
+      "units"
+    ]
+  ],
+  "half_cent_completed_order_ids": [
+    "ORD-0002",
+    "ORD-0008",
+    "ORD-0012",
+    "ORD-0030",
+    "ORD-0038",
+    "ORD-0041",
+    "ORD-0045",
+    "ORD-0046",
+    "ORD-0053",
+    "ORD-0062",
+    "ORD-0067",
+    "ORD-0068",
+    "ORD-0069",
+    "ORD-0070",
+    "ORD-0074",
+    "ORD-0093",
+    "ORD-0140",
+    "ORD-0143"
+  ],
+  "scope": "CSV content, independent Decimal arithmetic, documented cleaning and record-level reconciliation, descriptor/header/types/constraints, dictionary coverage, CC0 declaration consistency and package hashes. No generator import.",
+  "native_spreadsheet_engine_tested": false,
+  "limitations": [
+    "This verifier does not execute spreadsheet formulas in Excel or Google Sheets.",
+    "The documented spreadsheet formula uses integer unit-price cents and whole-percent discounts before line rounding; the independent reference uses exact Decimal half-up cents."
+  ]
+}

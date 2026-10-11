@@ -1,0 +1,23 @@
+resource,field,logical_type,description,unit,rules,example
+sales,order_id,string,Stable synthetic transaction ID. Each order contains exactly one product line.,,Unique in sales.csv; duplicates intentional in messy-sales.csv,ORD-0001
+sales,order_date,date,"Calendar date of the synthetic order, 2026-01-01 through 2026-03-31.",,Clean: YYYY-MM-DD. Messy: also YYYY/MM/DD and explicitly DD/MM/YYYY; one invalid date,2026-01-01
+sales,region,string,"Fictional shop reporting region, not a customer's location.",,"North; South; East; West. Messy: spaces, NBSP and one missing value",East
+sales,channel,string,Order channel.,,Online; Retail; Wholesale. Messy: three lowercase labels,Online
+sales,product_id,string,Lookup key into products.csv.,,P001 through P006. Messy: two padded keys,P005
+sales,units,integer,"Units on one order line, including returned or cancelled orders.",,1 through 8. Messy: three padded values and one missing value,4
+sales,unit_price_usd,number,"Selling price before discount, in USD per unit, equal to catalog list price.",USD,Two decimal places; no tax or shipping. Messy: three dollar-sign prefixes,22.75
+sales,discount_rate,number,Fraction of the pre-discount line amount removed.,,0.00; 0.05; 0.10; 0.15. Messy: two percent strings,0.10
+sales,status,string,Teaching convention: only Completed orders contribute to net sales.,,Completed; Returned; Cancelled. No negative return transaction is modelled,Completed
+messy-sales,order_id,string,Stable synthetic transaction ID. Each order contains exactly one product line.,,Unique in sales.csv; duplicates intentional in messy-sales.csv,ORD-0001
+messy-sales,order_date,string,"Calendar date of the synthetic order, 2026-01-01 through 2026-03-31.",,Clean: YYYY-MM-DD. Messy: also YYYY/MM/DD and explicitly DD/MM/YYYY; one invalid date,2026-01-01
+messy-sales,region,string,"Fictional shop reporting region, not a customer's location.",,"North; South; East; West. Messy: spaces, NBSP and one missing value",East
+messy-sales,channel,string,Order channel.,,Online; Retail; Wholesale. Messy: three lowercase labels,Online
+messy-sales,product_id,string,Lookup key into products.csv.,,P001 through P006. Messy: two padded keys,P005
+messy-sales,units,string,"Units on one order line, including returned or cancelled orders.",,1 through 8. Messy: three padded values and one missing value,4
+messy-sales,unit_price_usd,string,"Selling price before discount, in USD per unit, equal to catalog list price.",USD,Two decimal places; no tax or shipping. Messy: three dollar-sign prefixes,22.75
+messy-sales,discount_rate,string,Fraction of the pre-discount line amount removed.,,0.00; 0.05; 0.10; 0.15. Messy: two percent strings,0.10
+messy-sales,status,string,Teaching convention: only Completed orders contribute to net sales.,,Completed; Returned; Cancelled. No negative return transaction is modelled,Completed
+products,product_id,string,Unique catalog product key.,,P001 through P006,P001
+products,product_name,string,Fictional product label.,,No manufacturer or trademark claims,A5 notebook
+products,category,string,Category used for a keyed lookup exercise.,,Office; Accessories; Drinkware,Office
+products,list_price_usd,number,"Catalog price before discount, equal to sales unit price.",USD per unit,"Positive, two decimal places",4.50

@@ -1,0 +1,120 @@
+{
+  "engine": "OpenAI artifact-tool local spreadsheet calculation engine",
+  "passed": true,
+  "formula_error_matches": 0,
+  "native_excel_google_sheets_tested": false,
+  "checks": [
+    {
+      "metric": "rows",
+      "formula": "=COUNTA(Sales!A2:A145)",
+      "expected": 144,
+      "actual": 144,
+      "pass": true
+    },
+    {
+      "metric": "numeric_dates",
+      "formula": "=COUNT(Sales!K2:K145)",
+      "expected": 144,
+      "actual": 144,
+      "pass": true
+    },
+    {
+      "metric": "net_sales",
+      "formula": "=SUM(Sales!J2:J145)",
+      "expected": 6136.66,
+      "actual": 6136.660000000002,
+      "pass": true
+    },
+    {
+      "metric": "completed",
+      "formula": "=COUNTIF(Sales!I2:I145,\"Completed\")",
+      "expected": 114,
+      "actual": 114,
+      "pass": true
+    },
+    {
+      "metric": "returned",
+      "formula": "=COUNTIF(Sales!I2:I145,\"Returned\")",
+      "expected": 11,
+      "actual": 11,
+      "pass": true
+    },
+    {
+      "metric": "north_online",
+      "formula": "=SUMIFS(Sales!J2:J145,Sales!C2:C145,\"North\",Sales!D2:D145,\"Online\")",
+      "expected": 340.73,
+      "actual": 340.73,
+      "pass": true
+    },
+    {
+      "metric": "february",
+      "formula": "=SUMIFS(Sales!J2:J145,Sales!K2:K145,\">=\"&DATE(2026,2,1),Sales!K2:K145,\"<\"&DATE(2026,3,1))",
+      "expected": 1786.52,
+      "actual": 1786.5200000000002,
+      "pass": true
+    },
+    {
+      "metric": "lookup",
+      "formula": "=IFNA(VLOOKUP(\"P004\",Products!$A$2:$D$7,2,FALSE),\"Unmapped\")",
+      "expected": "USB cable",
+      "actual": "USB cable",
+      "pass": true
+    },
+    {
+      "metric": "unmapped",
+      "formula": "=COUNTIF(Sales!L2:L145,\"Unmapped\")",
+      "expected": 0,
+      "actual": 0,
+      "pass": true
+    },
+    {
+      "metric": "office",
+      "formula": "=SUMIFS(Sales!J2:J145,Sales!L2:L145,\"Office\")",
+      "expected": 2178.23,
+      "actual": 2178.2300000000005,
+      "pass": true
+    },
+    {
+      "metric": "changed_regions",
+      "formula": "=COUNTIF(Messy!K2:K149,1)",
+      "expected": 7,
+      "actual": 7,
+      "pass": true
+    },
+    {
+      "metric": "missing_region",
+      "formula": "=COUNTBLANK(Messy!J2:J149)",
+      "expected": 1,
+      "actual": 1,
+      "pass": true
+    },
+    {
+      "metric": "duplicate_extras",
+      "formula": "=COUNTIF(Messy!L2:L149,1)",
+      "expected": 4,
+      "actual": 4,
+      "pass": true
+    },
+    {
+      "metric": "invalid_dates",
+      "formula": "=COUNTIF(Messy!Q2:Q149,0)",
+      "expected": 1,
+      "actual": 1,
+      "pass": true
+    },
+    {
+      "metric": "valid_dates",
+      "formula": "=COUNTIF(Messy!Q2:Q149,1)",
+      "expected": 147,
+      "actual": 147,
+      "pass": true
+    },
+    {
+      "metric": "missing_fields",
+      "formula": "=COUNTBLANK(Messy!C2:C149)+COUNTBLANK(Messy!F2:F149)",
+      "expected": 2,
+      "actual": 2,
+      "pass": true
+    }
+  ]
+}
